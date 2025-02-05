@@ -21,10 +21,23 @@ const PORT = process.env.PORT || 3000;
 // to make input as json
 app.use(express.json())
 app.use(cookieParser())
-app.use(cors({ origin: ["http://localhost:5173", "https://memmomind-be.onrender.com"], credentials: true }))
+app.use(cors({
+  origin: ["http://localhost:5173", "https://memmomind-be.onrender.com"],
+  credentials: true,
+  allowedHeaders: ["Authorization", "Content-Type"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+}));
+
+app.options("*", (req, res) => {
+  res.header("Access-Control-Allow-Origin", req.headers.origin); 
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Authorization, Content-Type");
+  res.status(200).send();
+});
 
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Headers", "Authorization");
+  res.header("Access-Control-Allow-Origin", req.headers.origin); 
+  res.header("Access-Control-Allow-Headers", "Authorization, Content-Type");
   next();
 });
 
