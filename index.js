@@ -23,6 +23,11 @@ app.use(express.json())
 app.use(cookieParser())
 app.use(cors({ origin: ["http://localhost:5173", "https://memmomind-be.onrender.com"], credentials: true }))
 
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Headers", "Authorization");
+  next();
+});
+
 app.listen(3000, () => {
   console.log(`Server started on port http://localhost:${PORT}`)
 })
