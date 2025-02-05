@@ -17,6 +17,10 @@ const noteSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  isDeleted: {
+    type: Boolean,
+    default: false,
+  },
   userId: {
     type: String,
     required: true,

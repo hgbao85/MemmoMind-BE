@@ -45,7 +45,7 @@ export const editNote = async (req, res, next) => {
     return next(errorHandler(401, "You can only update your own note!"))
   }
 
-  const { title, content, tags, isPinned } = req.body
+  const { title, content, tags, isPinned, isDeleted } = req.body
 
   if (!title && !content && !tags) {
     return next(errorHandler(404, "No changes provided"))
@@ -67,6 +67,9 @@ export const editNote = async (req, res, next) => {
     if (isPinned) {
       note.isPinned = isPinned
     }
+    if (isDeleted) {
+      note.isDeleted = isDeleted
+    }
 
     await note.save()
 
@@ -81,41 +84,21 @@ export const editNote = async (req, res, next) => {
 }
 
 export const getAllNotes = async (req, res, next) => {
-  const userId = req.user.id
+  const userId = req.user.id;
 
   try {
-    const notes = await Note.find({ userId: userId }).sort({ isPinned: -1 })
+    const notes = await Note.find({ userId: userId, isDeleted: false }).sort({ isPinned: -1 });
 
     res.status(200).json({
       success: true,
-      message: "All notes retrived successfully",
+      message: "All notes retrieved successfully",
       notes,
-    })
+    });
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
 
-export const deleteNote = async (req, res, next) => {
-  const noteId = req.params.noteId
-
-  const note = await Note.findOne({ _id: noteId, userId: req.user.id })
-
-  if (!note) {
-    return next(errorHandler(404, "Note not found"))
-  }
-
-  try {
-    await Note.deleteOne({ _id: noteId, userId: req.user.id })
-
-    res.status(200).json({
-      success: true,
-      message: "Xóa ghi chú thành công!",
-    })
-  } catch (error) {
-    next(error)
-  }
-}
 
 export const updateNotePinned = async (req, res, next) => {
   try {
@@ -145,6 +128,68 @@ export const updateNotePinned = async (req, res, next) => {
   }
 }
 
+export const moveToTrash = async (req, res, next) => {
+  const noteId = req.params.noteId;
+
+  try {
+    const note = await Note.findOne({ _id: noteId, userId: req.user.id });
+
+    if (!note) {
+      return next(errorHandler(404, "Note not found"));
+    }
+
+    note.isDeleted = true; // Mark as deleted
+    await note.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Note moved to Trash!",
+      note,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const restoreNote = async (req, res, next) => {
+  const noteId = req.params.noteId;
+
+  try {
+    const note = await Note.findOne({ _id: noteId, userId: req.user.id });
+
+    if (!note) {
+      return next(errorHandler(404, "Note not found"));
+    }
+
+    note.isDeleted = false; // Restore note
+    await note.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Note restored successfully!",
+      note,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getTrashedNotes = async (req, res, next) => {
+  const userId = req.user.id;
+
+  try {
+    const trashedNotes = await Note.find({ userId: userId, isDeleted: true });
+
+    res.status(200).json({
+      success: true,
+      message: "Trashed notes retrieved successfully",
+      notes: trashedNotes,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const searchNote = async (req, res, next) => {
   const { query } = req.query
 
@@ -170,3 +215,24 @@ export const searchNote = async (req, res, next) => {
     next(error)
   }
 }
+
+export const permanentlyDeleteNote = async (req, res, next) => {
+  const noteId = req.params.noteId;
+
+  try {
+    const note = await Note.findOne({ _id: noteId, userId: req.user.id });
+
+    if (!note) {
+      return next(errorHandler(404, "Note not found"));
+    }
+
+    await Note.deleteOne({ _id: noteId }); // Permanently delete the note
+
+    res.status(200).json({
+      success: true,
+      message: "Note permanently deleted!",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
